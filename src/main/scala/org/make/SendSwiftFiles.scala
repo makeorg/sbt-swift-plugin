@@ -23,37 +23,49 @@ import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.make.swift.SwiftClient
 import org.make.swift.model.Bucket
+
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Try
 
 object SendSwiftFiles extends App {
-  val swiftConfigurationPath = args(0)
-  val swiftContainerName = args(1)
-  val swiftReportsToSendPath = args(2)
 
-  val configuration = ConfigFactory.load(
-    ConfigFactory
-      .parseFile(new File(swiftConfigurationPath)))
+  var maybeActorSystem: Option[ActorSystem] = None
 
-  val client = SwiftClient.create(ActorSystem("SbtSwift", configuration))
-  Await.result(client.init(), 20.seconds)
+  Try {
+    val swiftConfigurationPath = args(0)
+    val swiftContainerName = args(1)
+    val swiftReportsToSendPath = args(2)
 
-  val bucket = Bucket(0, 0, swiftContainerName)
+    val configuration =
+      ConfigFactory.load(
+        ConfigFactory.parseFile(new File(swiftConfigurationPath))
+      )
 
-  val reportsPath = new File(swiftReportsToSendPath)
-  val filesToSend: Seq[String] = listSubfiles(reportsPath)
+    val actorSystem = ActorSystem("SbtSwift", configuration)
+    maybeActorSystem = Some(actorSystem)
+    val client = SwiftClient.create(actorSystem)
+    Await.result(client.init(), 20.seconds)
 
-  val baseDirectory = {
-    if (reportsPath.isDirectory) {
-      reportsPath
-    } else {
-      reportsPath.getParentFile
+    val bucket = Bucket(0, 0, swiftContainerName)
+    val reportsPath = new File(swiftReportsToSendPath)
+    val filesToSend: Seq[String] = listSubfiles(reportsPath)
+
+    val baseDirectory = {
+      if (reportsPath.isDirectory) {
+        reportsPath
+      } else {
+        reportsPath.getParentFile
+      }
     }
+
+    Await.result(sendFiles(client, bucket, filesToSend, baseDirectory),
+                 30.minutes)
   }
 
-  Await.result(sendFiles(client, bucket, filesToSend, baseDirectory),
-               30.minutes)
+  maybeActorSystem.foreach(_.terminate())
+  System.exit(0)
 
   def sendFiles(client: SwiftClient,
                 bucket: Bucket,

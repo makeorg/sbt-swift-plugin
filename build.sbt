@@ -16,7 +16,7 @@
 
 organization := "org.make"
 name := "sbt-swift-plugin"
-version := "1.0.1-SNAPSHOT"
+version := "1.0.1"
 
 description :=
   """

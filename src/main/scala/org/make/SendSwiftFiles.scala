@@ -27,7 +27,7 @@ import org.make.swift.model.Bucket
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 object SendSwiftFiles extends App {
 
@@ -62,10 +62,15 @@ object SendSwiftFiles extends App {
 
     Await.result(sendFiles(client, bucket, filesToSend, baseDirectory),
                  30.minutes)
+  } match {
+    case scala.util.Success(_) =>
+      maybeActorSystem.foreach(_.terminate())
+      System.exit(0)
+    case Failure(e) =>
+      e.printStackTrace()
+      maybeActorSystem.foreach(_.terminate())
+      System.exit(1)
   }
-
-  maybeActorSystem.foreach(_.terminate())
-  System.exit(0)
 
   def sendFiles(client: SwiftClient,
                 bucket: Bucket,

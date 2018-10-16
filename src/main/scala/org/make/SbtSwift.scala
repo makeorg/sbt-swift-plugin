@@ -16,19 +16,12 @@
 
 package org.make
 
-import java.nio.file.Files
+import java.net.URLClassLoader
 
-import sbt.File
-import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
-import org.make.swift.SwiftClient
-import org.make.swift.model.Bucket
-import sbt.internal.util.complete.DefaultParsers
-import sbt.{AutoPlugin, Command, Def, Keys, Project, State}
-
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
+import sbt.Keys._
+import sbt.OutputStrategy.LoggedOutput
+import sbt.util.Logger
+import sbt.{AutoPlugin, Def, File, Fork, ForkOptions}
 
 object SbtSwift extends AutoPlugin {
 
@@ -47,90 +40,42 @@ object SbtSwift extends AutoPlugin {
 
   import autoImport._
 
-  override def globalSettings: Seq[Def.Setting[_]] = {
-    Keys.commands += sendReportsCommand
-  }
-
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    swiftContainerDirectory := None
+    swiftContainerDirectory := None,
+    swiftSendReports := {
+      val logger: Logger = streams.value.log
+      val configFile =
+        swiftConfigurationPath.value
+
+      val bucketName: String =
+        swiftContainerName.value
+
+      val reportsPath: File =
+        swiftReportsToSendPath.value
+
+      val classpath: Array[File] = getClasspathString
+      val fork = new Fork("java", Some("org.make.SendSwiftFiles"))
+
+      val options =
+        Seq(configFile.getAbsolutePath, bucketName, reportsPath.getAbsolutePath)
+
+      logger.info(s"Classpath is ${classpath.mkString(",")}")
+
+      logger.debug(
+        s"Calling SendSwiftFiles with options: ${options.mkString("[", ", ", "]")}")
+
+      val forkProcessOptions =
+        ForkOptions()
+          .withOutputStrategy(LoggedOutput(logger))
+          .withBootJars(classpath.toVector)
+
+      fork(forkProcessOptions, options)
+    }
   )
 
-  private lazy val sendReportsCommand =
-    Command("send-reports")(_ => DefaultParsers.EOF) { (state: State, _) =>
-      sendReports(state)
-      state
-    }
-
-  private def sendReports(state: State): Unit = {
-    val extracted = Project.extract(state)
-    import extracted._
-
-    val configFile =
-      swiftConfigurationPath.in(currentRef).get(structure.data).get
-
-    val configuration = ConfigFactory.load(ConfigFactory.parseFile(configFile))
-    val client = SwiftClient.create(ActorSystem("SbtSwift", configuration))
-    Await.result(client.init(), 20.seconds)
-
-    state.log.info("Swift client initialized successfully, sending reports")
-
-    val bucketName: String =
-      swiftContainerName.in(currentRef).get(structure.data).get
-
-    val reportsPath: File =
-      swiftReportsToSendPath.in(currentRef).get(structure.data).get
-
-    val bucket = Bucket(0, 0, bucketName)
-
-    val filesToSend: Seq[String] = listSubfiles(reportsPath)
-
-    val baseDirectory = {
-      if (reportsPath.isDirectory) {
-        reportsPath
-      } else {
-        reportsPath.getParentFile
-      }
-    }
-
-    Await.result(
-      sendFiles(state.log.info(_), client, bucket, filesToSend, baseDirectory),
-      30.minutes)
+  def getClasspathString: Array[File] = {
+    val applicationClassLoader = getClass.getClassLoader
+    val urls = applicationClassLoader.asInstanceOf[URLClassLoader].getURLs
+    urls.map(url => new File(url.getFile))
   }
-
-  def sendFiles(info: => String => Unit,
-                client: SwiftClient,
-                bucket: Bucket,
-                filesToSend: Seq[String],
-                baseDirectory: File): Future[Unit] = {
-
-    var future = Future.successful {}
-    filesToSend.foreach { fileName =>
-      future = future.flatMap { _ =>
-        val source = new File(baseDirectory, fileName)
-        val contentType =
-          Option(Files.probeContentType(source.toPath))
-            .getOrElse("application/octet-stream")
-        info(s"Sending $fileName")
-        client.sendFile(bucket, fileName, contentType, source)
-      }
-    }
-    future
-  }
-
-  def listSubfiles(file: File, root: Boolean = true): Seq[String] = {
-    if (file.isFile) {
-      Seq(file.getName)
-    } else {
-      file.listFiles().toSeq.flatMap { child =>
-        listSubfiles(file = child, root = false).map { name =>
-          if (root) {
-            name
-          } else {
-            s"${file.getName}/$name"
-          }
-        }
-      }
-    }
-  }
-
 }

@@ -62,16 +62,15 @@ class SwiftTest extends DockerSwiftAllInOne with MakeTest with StrictLogging {
 
       val target = Bucket(0, 0, "test1")
 
-      val filesToSend = SbtSwift.listSubfiles(baseDirectory.toFile)
+      val filesToSend = SendSwiftFiles.listSubfiles(baseDirectory.toFile)
       val filesAsString =
         Array("deeper/test-3.json", "test-1.json", "test-2.json")
       filesToSend.sorted.toArray should be(filesAsString)
 
-      whenReady(SbtSwift.sendFiles(logger.info(_),
-                                   client,
-                                   target,
-                                   filesToSend,
-                                   baseDirectory.toFile),
+      whenReady(SendSwiftFiles.sendFiles(client,
+                                         target,
+                                         filesToSend,
+                                         baseDirectory.toFile),
                 Timeout(30.seconds)) { _ =>
         ()
       }
@@ -89,16 +88,15 @@ class SwiftTest extends DockerSwiftAllInOne with MakeTest with StrictLogging {
 
     scenario("Sending a single file") {
       val file = java.io.File.createTempFile("test", ".json")
-      val filesToSend = SbtSwift.listSubfiles(file)
+      val filesToSend = SendSwiftFiles.listSubfiles(file)
       filesToSend.toArray should be(Array(file.getName))
 
       val target = Bucket(0, 0, "test2")
 
-      whenReady(SbtSwift.sendFiles(logger.info(_),
-                                   client,
-                                   target,
-                                   filesToSend,
-                                   file.getParentFile),
+      whenReady(SendSwiftFiles.sendFiles(client,
+                                         target,
+                                         filesToSend,
+                                         file.getParentFile),
                 Timeout(30.seconds)) { _ =>
         ()
       }

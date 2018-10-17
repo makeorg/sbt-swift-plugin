@@ -53,13 +53,16 @@ object SbtSwift extends AutoPlugin {
       val reportsPath: File =
         swiftReportsToSendPath.value
 
+      val containerDirectory = swiftContainerDirectory.value
+
       val classpath: Array[File] = getClasspathString
       val fork = new Fork("java", Some("org.make.SendSwiftFiles"))
 
       val options =
-        Seq(configFile.getAbsolutePath, bucketName, reportsPath.getAbsolutePath)
-
-      logger.info(s"Classpath is ${classpath.mkString(",")}")
+        Seq(configFile.getAbsolutePath,
+            bucketName,
+            reportsPath.getAbsolutePath,
+            containerDirectory.getOrElse(""))
 
       logger.debug(
         s"Calling SendSwiftFiles with options: ${options.mkString("[", ", ", "]")}")

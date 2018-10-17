@@ -17,26 +17,34 @@
 package org.make
 
 import java.io.File
-import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
+import org.apache.tika.Tika
 import org.make.swift.SwiftClient
 import org.make.swift.model.Bucket
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Try}
 
 object SendSwiftFiles extends App {
 
   var maybeActorSystem: Option[ActorSystem] = None
+  val tika: Tika = new Tika()
 
   Try {
     val swiftConfigurationPath = args(0)
     val swiftContainerName = args(1)
     val swiftReportsToSendPath = args(2)
+    val swiftReportsDirectory = {
+      if (args.length >= 4 && !args(3).isEmpty) {
+        args(3) + "/"
+      } else {
+        ""
+      }
+    }
 
     val configuration =
       ConfigFactory.load(
@@ -60,7 +68,11 @@ object SendSwiftFiles extends App {
       }
     }
 
-    Await.result(sendFiles(client, bucket, filesToSend, baseDirectory),
+    Await.result(sendFiles(client,
+                           bucket,
+                           filesToSend,
+                           baseDirectory,
+                           swiftReportsDirectory),
                  30.minutes)
   } match {
     case scala.util.Success(_) =>
@@ -75,17 +87,16 @@ object SendSwiftFiles extends App {
   def sendFiles(client: SwiftClient,
                 bucket: Bucket,
                 filesToSend: Seq[String],
-                baseDirectory: File): Future[Unit] = {
+                baseDirectory: File,
+                pathPrefix: String): Future[Unit] = {
 
     var future = Future.successful {}
     filesToSend.foreach { fileName =>
       future = future.flatMap { _ =>
         val source = new File(baseDirectory, fileName)
-        val contentType =
-          Option(Files.probeContentType(source.toPath))
-            .getOrElse("application/octet-stream")
+        val contentType = tika.detect(source)
         println(s"Sending $fileName")
-        client.sendFile(bucket, fileName, contentType, source)
+        client.sendFile(bucket, pathPrefix + fileName, contentType, source)
       }
     }
     future

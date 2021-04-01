@@ -60,6 +60,10 @@ scmInfo := Some(ScmInfo(
   connection = "scm:git:git://gitlab.com:makeorg/devtools/sbt-swift-plugin.git",
   devConnection = Some("scm:git:ssh://gitlab.com:makeorg/devtools/sbt-swift-plugin.git")))
 
+startYear := Some(2018)
+
+organizationHomepage := Some(url("https://make.org"))
+homepage := Some(url("https://gitlab.com/makeorg/devtools/sbt-swift-plugin"))
 
 scalastyleConfig := baseDirectory.value / "scalastyle-config.xml"
 

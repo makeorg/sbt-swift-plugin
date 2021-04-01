@@ -16,18 +16,15 @@
 
 organization := "org.make"
 name := "sbt-swift-plugin"
-version := "1.0.4"
 
 description :=
   """
     |SBT plugin allowing to send reports to a swift (openstack) bucket
   """.stripMargin
 
-scalaVersion := "2.12.10"
+scalaVersion := "2.12.12"
 
 sbtPlugin := true
-
-publishMavenStyle := false
 
 licenses += "Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0.html")
 

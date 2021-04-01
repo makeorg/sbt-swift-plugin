@@ -61,9 +61,6 @@ scmInfo := Some(ScmInfo(
   devConnection = Some("scm:git:ssh://gitlab.com:makeorg/devtools/sbt-swift-plugin.git")))
 
 
-bintrayOrganization := Some("make-org")
-bintrayRepository := "public"
-
 scalastyleConfig := baseDirectory.value / "scalastyle-config.xml"
 
 libraryDependencies ++= Seq(

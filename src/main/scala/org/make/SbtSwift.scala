@@ -29,8 +29,7 @@ object SbtSwift extends AutoPlugin {
     val swiftConfigurationPath = sbt.settingKey[File]("Swift configuration")
     val swiftContainerName =
       sbt.settingKey[String]("Swift container / bucket name")
-    val swiftReportsToSendPath = sbt.settingKey[File](
-      "Directory containing the files to send or single file to send")
+    val swiftReportsToSendPath = sbt.settingKey[File]("Directory containing the files to send or single file to send")
     val swiftContainerDirectory =
       sbt.settingKey[Option[String]]("Destination directory for the sent files")
 
@@ -40,9 +39,8 @@ object SbtSwift extends AutoPlugin {
 
   import autoImport._
 
-  override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    swiftContainerDirectory := None,
-    swiftSendReports := {
+  override def projectSettings: Seq[Def.Setting[_]] =
+    Seq(swiftContainerDirectory := None, swiftSendReports := {
       val logger: Logger = streams.value.log
       val configFile =
         swiftConfigurationPath.value
@@ -59,13 +57,9 @@ object SbtSwift extends AutoPlugin {
       val fork = new Fork("java", Some("org.make.SendSwiftFiles"))
 
       val options =
-        Seq(configFile.getAbsolutePath,
-            bucketName,
-            reportsPath.getAbsolutePath,
-            containerDirectory.getOrElse(""))
+        Seq(configFile.getAbsolutePath, bucketName, reportsPath.getAbsolutePath, containerDirectory.getOrElse(""))
 
-      logger.debug(
-        s"Calling SendSwiftFiles with options: ${options.mkString("[", ", ", "]")}")
+      logger.debug(s"Calling SendSwiftFiles with options: ${options.mkString("[", ", ", "]")}")
 
       val forkProcessOptions =
         ForkOptions()
@@ -73,8 +67,7 @@ object SbtSwift extends AutoPlugin {
           .withBootJars(classpath.toVector)
 
       fork(forkProcessOptions, options)
-    }
-  )
+    })
 
   def getClasspathString: Array[File] = {
     val applicationClassLoader = getClass.getClassLoader

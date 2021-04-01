@@ -70,7 +70,8 @@ class SwiftTest extends DockerSwiftAllInOne with MakeTest with StrictLogging {
       whenReady(SendSwiftFiles.sendFiles(client,
                                          target,
                                          filesToSend,
-                                         baseDirectory.toFile),
+                                         baseDirectory.toFile,
+                              ""),
                 Timeout(30.seconds)) { _ =>
         ()
       }
@@ -93,11 +94,9 @@ class SwiftTest extends DockerSwiftAllInOne with MakeTest with StrictLogging {
 
       val target = Bucket(0, 0, "test2")
 
-      whenReady(SendSwiftFiles.sendFiles(client,
-                                         target,
-                                         filesToSend,
-                                         file.getParentFile),
-                Timeout(30.seconds)) { _ =>
+      whenReady(
+        SendSwiftFiles.sendFiles(client, target, filesToSend, file.getParentFile, ""), Timeout(30.seconds)
+      ) { _ =>
         ()
       }
 

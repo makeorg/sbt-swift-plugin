@@ -16,79 +16,24 @@
 
 package org.make
 
-import java.io.File
-
-import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
 import org.apache.tika.Tika
 import org.make.swift.SwiftClient
 import org.make.swift.model.Bucket
 
+import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Try}
+import scala.concurrent.Future
 
-object SendSwiftFiles extends App {
+object SendSwiftFiles {
+  private val tika: Tika = new Tika()
 
-  var maybeActorSystem: Option[ActorSystem] = None
-  val tika: Tika = new Tika()
-
-  Try {
-    val swiftConfigurationPath = args(0)
-    val swiftContainerName = args(1)
-    val swiftReportsToSendPath = args(2)
-    val swiftReportsDirectory = {
-      if (args.length >= 4 && !args(3).isEmpty) {
-        args(3) + "/"
-      } else {
-        ""
-      }
-    }
-
-    val configuration =
-      ConfigFactory.load(
-        ConfigFactory.parseFile(new File(swiftConfigurationPath))
-      )
-
-    val actorSystem = ActorSystem("SbtSwift", configuration)
-    maybeActorSystem = Some(actorSystem)
-    val client = SwiftClient.create(actorSystem)
-    Await.result(client.init(), 20.seconds)
-
-    val bucket = Bucket(0, 0, swiftContainerName)
-    val reportsPath = new File(swiftReportsToSendPath)
-    val filesToSend: Seq[String] = listSubfiles(reportsPath)
-
-    val baseDirectory = {
-      if (reportsPath.isDirectory) {
-        reportsPath
-      } else {
-        reportsPath.getParentFile
-      }
-    }
-
-    Await.result(sendFiles(client,
-                           bucket,
-                           filesToSend,
-                           baseDirectory,
-                           swiftReportsDirectory),
-                 30.minutes)
-  } match {
-    case scala.util.Success(_) =>
-      maybeActorSystem.foreach(_.terminate())
-      System.exit(0)
-    case Failure(e) =>
-      e.printStackTrace()
-      maybeActorSystem.foreach(_.terminate())
-      System.exit(1)
-  }
-
-  def sendFiles(client: SwiftClient,
-                bucket: Bucket,
-                filesToSend: Seq[String],
-                baseDirectory: File,
-                pathPrefix: String): Future[Unit] = {
+  def sendFiles(
+    client: SwiftClient,
+    bucket: Bucket,
+    filesToSend: Seq[String],
+    baseDirectory: File,
+    pathPrefix: String
+  ): Future[Unit] = {
 
     var future = Future.successful {}
     filesToSend.foreach { fileName =>

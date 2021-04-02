@@ -40,34 +40,37 @@ object SbtSwift extends AutoPlugin {
   import autoImport._
 
   override def projectSettings: Seq[Def.Setting[_]] =
-    Seq(swiftContainerDirectory := None, swiftSendReports := {
-      val logger: Logger = streams.value.log
-      val configFile =
-        swiftConfigurationPath.value
+    Seq(
+      swiftContainerDirectory := None,
+      swiftSendReports := {
+        val logger: Logger = streams.value.log
+        val configFile =
+          swiftConfigurationPath.value
 
-      val bucketName: String =
-        swiftContainerName.value
+        val bucketName: String =
+          swiftContainerName.value
 
-      val reportsPath: File =
-        swiftReportsToSendPath.value
+        val reportsPath: File =
+          swiftReportsToSendPath.value
 
-      val containerDirectory = swiftContainerDirectory.value
+        val containerDirectory = swiftContainerDirectory.value
 
-      val classpath: Array[File] = getClasspathString
-      val fork = new Fork("java", Some("org.make.SendSwiftFiles"))
+        val classpath: Array[File] = getClasspathString
+        val fork = new Fork("java", Some("org.make.SendSwiftFiles"))
 
-      val options =
-        Seq(configFile.getAbsolutePath, bucketName, reportsPath.getAbsolutePath, containerDirectory.getOrElse(""))
+        val options =
+          Seq(configFile.getAbsolutePath, bucketName, reportsPath.getAbsolutePath, containerDirectory.getOrElse(""))
 
-      logger.debug(s"Calling SendSwiftFiles with options: ${options.mkString("[", ", ", "]")}")
+        logger.debug(s"Calling SendSwiftFiles with options: ${options.mkString("[", ", ", "]")}")
 
-      val forkProcessOptions =
-        ForkOptions()
-          .withOutputStrategy(LoggedOutput(logger))
-          .withBootJars(classpath.toVector)
+        val forkProcessOptions =
+          ForkOptions()
+            .withOutputStrategy(LoggedOutput(logger))
+            .withBootJars(classpath.toVector)
 
-      fork(forkProcessOptions, options)
-    })
+        fork(forkProcessOptions, options)
+      }
+    )
 
   def getClasspathString: Array[File] = {
     val applicationClassLoader = getClass.getClassLoader

@@ -17,8 +17,8 @@
 package org.make
 
 import java.nio.file.{Files, Path}
-
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.swift.SwiftClient
@@ -28,7 +28,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-class SwiftTest extends DockerSwiftAllInOne with MakeTest with StrictLogging {
+class SwiftTest extends MakeTest with DockerSwiftAllInOne with StrictLogging {
 
   var client: SwiftClient = _
 
@@ -46,8 +46,8 @@ class SwiftTest extends DockerSwiftAllInOne with MakeTest with StrictLogging {
     stopAllQuietly()
   }
 
-  feature("sending files to swift") {
-    scenario("sending a directory") {
+  Feature("sending files to swift") {
+    Scenario("sending a directory") {
       val baseDirectory: Path = Files.createTempDirectory("test1")
       Files.write(Files.createFile(baseDirectory.resolve("test-1.json")),
                   "{}".getBytes("UTF-8"))
@@ -87,7 +87,7 @@ class SwiftTest extends DockerSwiftAllInOne with MakeTest with StrictLogging {
       Files.delete(baseDirectory)
     }
 
-    scenario("Sending a single file") {
+    Scenario("Sending a single file") {
       val file = java.io.File.createTempFile("test", ".json")
       val filesToSend = SendSwiftFiles.listSubfiles(file)
       filesToSend.toArray should be(Array(file.getName))
@@ -132,5 +132,5 @@ object SwiftTest {
       |}
     """.stripMargin))
 
-  val actorSystem: ActorSystem = ActorSystem("SwiftTest", configuration)
+  val actorSystem: ActorSystem[_] = ActorSystem[Nothing](Behaviors.empty, "SwiftTest", configuration)
 }

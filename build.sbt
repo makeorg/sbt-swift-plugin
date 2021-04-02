@@ -68,14 +68,13 @@ homepage := Some(url("https://gitlab.com/makeorg/devtools/sbt-swift-plugin"))
 scalastyleConfig := baseDirectory.value / "scalastyle-config.xml"
 
 libraryDependencies ++= Seq(
-  "org.apache.tika" % "tika-core" % "1.19.1",
-  "org.make" %% "openstack-swift-client" % "1.0.17",
-  "com.typesafe" % "config" % "1.3.2",
-  "com.typesafe.akka" %% "akka-actor" % "2.5.17",
-  "com.typesafe.akka" %% "akka-stream" % "2.5.17",
-  "com.typesafe.akka" %% "akka-http" % "10.1.5",
-  "com.whisk" %% "docker-testkit-scalatest" % "0.9.6" % "test",
-  ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.6" % "test").exclude("log4j", "log4j"),
-  "org.mockito" % "mockito-core" % "2.13.0" % "test",
-  "org.slf4j" % "slf4j-simple" % "1.7.25" % "test",
+  "org.apache.tika" % "tika-core" % "1.26",
+  "org.make" %% "openstack-swift-client" % "1.1.0",
+  "com.typesafe" % "config" % "1.4.1",
+  "com.whisk" %% "docker-testkit-scalatest" % "0.9.9" % "test",
+  ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9" % "test").exclude("log4j", "log4j"),
+  "org.scalatest"              %% "scalatest"                       % "3.2.7"              % Test,
+  "org.mockito"                %% "mockito-scala"                   % "1.16.33"            % Test,
+  "org.slf4j" % "slf4j-simple" % "1.7.30" % "test",
+  "com.typesafe.scala-logging" %% "scala-logging"                   % "3.9.3"              % Test
 )

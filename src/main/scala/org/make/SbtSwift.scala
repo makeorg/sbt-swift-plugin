@@ -56,7 +56,7 @@ object SbtSwift extends AutoPlugin {
         val containerDirectory = swiftContainerDirectory.value
 
         val classpath: Array[File] = getClasspathString
-        val fork = new Fork("java", Some("org.make.SendSwiftFiles"))
+        val fork = new Fork("java", Some("org.make.SbtSwiftTask"))
 
         val options =
           Seq(configFile.getAbsolutePath, bucketName, reportsPath.getAbsolutePath, containerDirectory.getOrElse(""))
